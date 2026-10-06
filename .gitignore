@@ -1,0 +1,11 @@
+.DS_Store
+*.log
+.env
+.vscode/
+.idea/
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+.env
+.DS_Store
