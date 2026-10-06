@@ -8,7 +8,6 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
@@ -34,10 +33,7 @@ jobs:
           envs: EC2_PASSWORD
           script: |
             set -e
-            # run a command with sudo, feeding it the SSH password
             s() { echo "$EC2_PASSWORD" | sudo -S -p '' "$@"; }
-
-            # 1. Install Nginx if it is not already installed
             if ! command -v nginx >/dev/null 2>&1; then
               if command -v apt-get >/dev/null 2>&1; then
                 s apt-get update -y
@@ -46,24 +42,16 @@ jobs:
                 s dnf install -y nginx
               fi
             fi
-
-            # 2. Create the web folder and let the deploy user write to it
             s mkdir -p /var/www/shopeasy
             s chown -R "$(id -un)":"$(id -gn)" /var/www/shopeasy
-
-            # 3. Point Nginx at the web folder
             cat > /tmp/shopeasy.conf <<'EOF'
             server {
-                listen 80 default_server;
-                listen [::]:80 default_server;
-
-                root /var/www/shopeasy;
-                index index.html;
-                server_name _;
-
-                location / {
-                    try_files $uri $uri/ =404;
-                }
+              listen 80 default_server;
+              listen [::]:80 default_server;
+              root /var/www/shopeasy;
+              index index.html;
+              server_name _;
+              location / { try_files $uri $uri/ =404; }
             }
             EOF
             if [ -d /etc/nginx/sites-available ]; then
@@ -73,12 +61,10 @@ jobs:
             else
               s mv /tmp/shopeasy.conf /etc/nginx/conf.d/shopeasy.conf
             fi
-
-            # 4. Make sure Nginx is running and the config is valid
             s nginx -t
             s systemctl enable --now nginx
 
-      # CD: copy the three website files from the runner to the server.
+      # CD: copy the website files from the runner to the server.
       - name: Copy application to EC2
         uses: appleboy/scp-action@v1
         with:
